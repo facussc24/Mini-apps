@@ -1,0 +1,23 @@
+¡Hola! Usar esta aplicación es muy fácil.
+
+**¿QUÉ ES ESTO?**
+
+Es una pequeña página web que corre solo en tu computadora. Te permite crear y guardar archivos de texto de forma sencilla. Para que la página web pueda guardar archivos en tu computadora, necesita un pequeño "servidor" local que actúe como puente. Los siguientes pasos inician ese servidor.
+
+**¿CÓMO EMPEZAR? (Solo 2 pasos)**
+
+1.  **INICIA EL SERVIDOR:**
+    - Si usas **Windows**: Haz doble clic en el archivo `iniciar.bat`.
+    - Si usas **Mac o Linux**: Haz doble clic en el archivo `iniciar.sh`.
+
+    Se abrirá una ventana negra (una terminal). ¡No la cierres! Mientras esa ventana esté abierta, el servidor estará funcionando.
+
+2.  **ABRE LA APLICACIÓN:**
+    - Abre tu navegador web (Chrome, Firefox, etc.).
+    - Ve a esta dirección: http://localhost:3000
+
+¡Y listo! Ya puedes usar la aplicación para crear y ver tus archivos. Los archivos que crees se guardarán en la carpeta "data".
+
+**¿CÓMO DETENER TODO?**
+
+Simplemente cierra la ventana negra que se abrió en el paso 1. Eso detendrá el servidor.
