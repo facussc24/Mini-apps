@@ -74,9 +74,18 @@
         <div class="section-title rounded-t-md">ESCENARIO / VERSIONADO</div>
         <div class="grid grid-cols-1 gap-2 text-xs">
           <label class="flex flex-col gap-1">
-            <span>Nombre de escenario</span>
+            <span>Nombre de escenario (para guardar)</span>
             <input type="text" id="scenarioName" placeholder="Ej: HILUX_OP10_Muro10" class="border rounded px-1 py-0.5 text-xs">
           </label>
+          <div class="flex items-center gap-2">
+            <label class="flex-grow flex flex-col gap-1">
+              <span>Cargar escenario guardado</span>
+              <select id="scenarioLoadSelect" class="border rounded px-1 py-0.5 text-xs h-[25px]">
+                <option value="">Seleccionar...</option>
+              </select>
+            </label>
+            <button id="btnLoad" class="btn self-end">Cargar</button>
+          </div>
           <label class="flex flex-col gap-1">
             <span>Nota / contexto</span>
             <textarea id="scenarioNote" rows="3" class="border rounded px-1 py-0.5 text-xs" placeholder="Ej: Balanceo A con muro 10% y retrabajo 5%"></textarea>
@@ -86,9 +95,12 @@
           <button id="btnSave" class="btn">Guardar</button>
           <button id="btnLoad" class="btn">Cargar</button>
           <button id="btnClear" class="btn">Limpiar</button>
+          <button id="btnImport" class="btn">Importar</button>
+          <button id="btnExport" class="btn">Exportar</button>
+          <input type="file" id="fileInput" class="hidden" accept=".json">
         </div>
         <p class="text-[0.7rem] text-slate-500 mt-1">
-          Se guarda localmente en este navegador (localStorage). Escribí el mismo nombre para cargarlo.
+          Guardá escenarios en este navegador o importá/exportá archivos .json para compartir.
         </p>
       </div>
 
@@ -215,6 +227,6 @@
   </div>
 
 </body>
-  <script src="app.js"></script>
+  <script type="module" src="main.js"></script>
 </body>
 </html>
