@@ -1,0 +1,9 @@
+body {
+  font-family: sans-serif;
+  margin: 20px;
+}
+
+#file-manager {
+  border: 1px solid #ccc;
+  padding: 20px;
+}

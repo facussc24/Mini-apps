@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Aplicación Local</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Gestor de Archivos Local</h1>
+  <div id="file-manager">
+    <!-- Aquí se mostrarán los archivos y las opciones para gestionarlos -->
+  </div>
+
+  <h2>Crear nuevo archivo</h2>
+  <form id="create-file-form">
+    <input type="text" id="filename" placeholder="Nombre del archivo" required>
+    <br>
+    <textarea id="file-content" placeholder="Contenido del archivo" required></textarea>
+    <br>
+    <button type="submit">Crear archivo</button>
+  </form>
+
+  <script src="app.js"></script>
+</body>
+</html>
