@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Balanceo de Línea - PW & Takt</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      background-color: #f3f4f6;
+    }
+    table {
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+    th, td {
+      border: 1px solid #d1d5db;
+      padding: 4px 6px;
+      text-align: center;
+    }
+    .header-cell {
+      background-color: #e5e7eb;
+      font-weight: 600;
+    }
+    .section-title {
+      background-color: #111827;
+      color: white;
+      font-weight: 700;
+      text-align: center;
+      padding: 4px 6px;
+      font-size: 0.8rem;
+    }
+    .input-cell {
+      background-color: #ffffff;
+      padding: 0;
+    }
+    .output-cell {
+      background-color: #f9fafb;
+      font-weight: 600;
+    }
+    input[type="number"],
+    input[type="text"],
+    textarea {
+      width: 100%;
+      border: none;
+      padding: 3px 4px;
+      font-size: 0.75rem;
+      box-sizing: border-box;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      box-shadow: inset 0 0 0 1px #3b82f6;
+    }
+    .op-over-takt {
+      background-color: #fee2e2 !important;
+      color: #991b1b;
+      font-weight: 700;
+    }
+    .station-over-takt {
+      background-color: #fee2e2 !important;
+      color: #991b1b;
+      font-weight: 700;
+    }
+    .error-panel {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .btn {
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body class="p-4">
+
+  <div class="max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-4 space-y-4">
+
+    <!-- ENCABEZADO -->
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 border-b pb-2">
+      <div>
+        <h1 class="text-xl font-bold tracking-wide text-slate-900">BALANCEO DE LÍNEA · MÉTODO PW</h1>
+        <p class="text-xs text-slate-500">
+          Basado en Takt Time clásico, Peso Posicional y eficiencia de balanceo.
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-2 items-center">
+        <div class="flex items-center gap-1 text-xs text-slate-600">
+          <span class="w-3 h-3 rounded-full bg-red-300 border border-red-500"></span> 
+          <span>Tiempo &gt; Takt</span>
+        </div>
+        <div class="flex items-center gap-1 text-xs text-slate-600">
+          <span class="w-3 h-3 rounded-full bg-emerald-200 border border-emerald-500"></span> 
+          <span>80–100% Takt</span>
+        </div>
+        <div class="flex items-center gap-1 text-xs text-slate-600">
+          <span class="w-3 h-3 rounded-full bg-slate-100 border border-slate-300"></span> 
+          <span>&lt;80% Takt</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- BLOQUE 1: PARÁMETROS GLOBALES + ESCENARIO -->
+    <section class="grid md:grid-cols-3 gap-4">
+      <!-- Parámetros de línea -->
+      <div class="border rounded-md p-2 space-y-2">
+        <div class="section-title rounded-t-md">PARÁMETROS DE LÍNEA</div>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <label class="flex flex-col gap-1">
+            <span>Tiempo disponible / día (min)</span>
+            <input type="number" id="tiempoDisponibleMin" value="480" min="1" class="border rounded px-1 py-0.5 text-xs">
+          </label>
+          <label class="flex flex-col gap-1">
+            <span>Demanda objetivo (pzs/día)</span>
+            <input type="number" id="demandaDiaria" value="500" min="1" class="border rounded px-1 py-0.5 text-xs">
+          </label>
+          <label class="flex flex-col gap-1">
+            <span>Fatiga global (%)</span>
+            <input type="number" id="fatigaGlobal" value="15" min="0" class="border rounded px-1 py-0.5 text-xs">
+          </label>
+          <label class="flex flex-col gap-1">
+            <span>Frecuencia por defecto (%)</span>
+            <input type="number" id="frecuenciaGlobal" value="100" min="1" max="100" class="border rounded px-1 py-0.5 text-xs">
+          </label>
+        </div>
+
+        <div class="mt-2 border-t pt-2 text-xs space-y-1">
+          <div><span class="font-semibold">Takt time:</span> <span id="taktLabel">–</span> seg/pza</div>
+          <div><span class="font-semibold">Contenido total de trabajo:</span> <span id="contenidoTotalLabel">–</span> seg/pza</div>
+          <div><span class="font-semibold">N° mínimo teórico de estaciones:</span> <span id="nMinEstLabel">–</span></div>
+        </div>
+      </div>
+
+      <!-- Escenario / guardar -->
+      <div class="border rounded-md p-2 space-y-2">
+        <div class="section-title rounded-t-md">ESCENARIO / VERSIONADO</div>
+        <div class="grid grid-cols-1 gap-2 text-xs">
+          <label class="flex flex-col gap-1">
+            <span>Nombre de escenario</span>
+            <input type="text" id="scenarioName" placeholder="Ej: HILUX_OP10_Muro10" class="border rounded px-1 py-0.5 text-xs">
+          </label>
+          <label class="flex flex-col gap-1">
+            <span>Nota / contexto</span>
+            <textarea id="scenarioNote" rows="3" class="border rounded px-1 py-0.5 text-xs" placeholder="Ej: Balanceo A con muro 10% y retrabajo 5%"></textarea>
+          </label>
+        </div>
+        <div class="flex flex-wrap gap-2 mt-1 text-xs">
+          <button id="btnSave" class="btn bg-emerald-600 text-white hover:bg-emerald-700">Guardar</button>
+          <button id="btnLoad" class="btn bg-sky-600 text-white hover:bg-sky-700">Cargar</button>
+          <button id="btnClear" class="btn bg-slate-200 text-slate-800 hover:bg-slate-300">Limpiar</button>
+        </div>
+        <p class="text-[0.7rem] text-slate-500 mt-1">
+          Se guarda localmente en este navegador (localStorage). Escribí el mismo nombre para cargarlo.
+        </p>
+      </div>
+
+      <!-- Resumen / capacidad / diagnóstico -->
+      <div class="border rounded-md p-2 space-y-1 text-xs">
+        <div class="section-title rounded-t-md">RESUMEN DE BALANCEO</div>
+        <div class="grid grid-cols-2 gap-x-2 gap-y-1">
+          <div class="font-semibold">N° estaciones reales (PW):</div>
+          <div id="nEstRealesLabel">–</div>
+
+          <div class="font-semibold">% Eficiencia de balanceo:</div>
+          <div id="eficienciaLabel">–</div>
+
+          <div class="font-semibold">Tiempo ocioso total:</div>
+          <div id="tiempoOciosoLabel">–</div>
+
+          <div class="font-semibold">Capacidad real (pzs/h):</div>
+          <div id="capacidadHoraLabel">–</div>
+
+          <div class="font-semibold">Capacidad real (pzs/día):</div>
+          <div id="capacidadDiaLabel">–</div>
+        </div>
+
+        <div class="mt-2 text-[0.7rem]">
+          <span class="font-semibold">Diagnóstico:</span>
+          <span id="diagnosticoLabel" class="text-slate-700">Cargá datos y presioná "Recalcular".</span>
+        </div>
+
+        <div class="mt-2">
+          <button id="btnRecalcular" class="btn bg-indigo-600 text-white hover:bg-indigo-700 w-full">
+            Recalcular PW, estaciones y gráficos
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLOQUE 2: TABLA DE OPERACIONES -->
+    <section>
+      <div class="section-title rounded-t-md">OPERACIONES / TAREAS BASE (INPUT PARA PW)</div>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr>
+              <th class="header-cell">#</th>
+              <th class="header-cell">Código OP</th>
+              <th class="header-cell">Descripción</th>
+              <th class="header-cell">
+                T. observado<br>(seg/ciclo)
+                <span title="Tiempo crudo medido de la actividad para un ciclo completo, sin dividir por Multi.">
+                  ⓘ
+                </span>
+              </th>
+              <th class="header-cell">
+                Multi<br>(pzs/ciclo)
+                <span title="Cuántas piezas salen simultáneamente en ese ciclo. Ej: molde 2 cavidades → 2.">
+                  ⓘ
+                </span>
+              </th>
+              <th class="header-cell">
+                Fatiga op. (%)<br>(vacío = global)
+                <span title="Porcentaje adicional aplicado al tiempo observado de esta operación. Si lo dejás vacío, se usa la fatiga global.">
+                  ⓘ
+                </span>
+              </th>
+              <th class="header-cell">
+                Frecuencia (%)<br>en piezas
+                <span title="Si la tarea se hace solo en parte de las piezas (ej: inspección 10%), poné ese porcentaje. Se pondera el tiempo estándar.">
+                  ⓘ
+                </span>
+              </th>
+              <th class="header-cell">
+                Predecesoras<br>(OP10,OP20)
+              </th>
+              <th class="header-cell">
+                T. estándar<br>(seg/pza)
+              </th>
+              <th class="header-cell">
+                Peso Posicional<br>(PW)
+              </th>
+              <th class="header-cell">
+                Estación PW<br>asignada
+              </th>
+              <th class="header-cell">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tasksBody">
+            <!-- Filas dinámicas -->
+          </tbody>
+        </table>
+      </div>
+      <div class="flex justify-between mt-2 text-xs">
+        <button id="btnAddRow" class="btn bg-slate-800 text-white hover:bg-slate-900">
+          + Agregar operación
+        </button>
+        <p class="text-[0.7rem] text-slate-500">
+          Tip: cargá primero todos los tiempos observados, Multi y fatigas; luego las precedencias.
+        </p>
+      </div>
+    </section>
+
+    <!-- BLOQUE 3: GRÁFICOS -->
+    <section class="grid md:grid-cols-2 gap-4">
+      <div class="border rounded-md p-2">
+        <div class="section-title rounded-t-md">CARGA POR ESTACIÓN VS TAKT</div>
+        <div class="h-64">
+          <canvas id="chartStations"></canvas>
+        </div>
+      </div>
+      <div class="border rounded-md p-2">
+        <div class="section-title rounded-t-md">TIEMPO POR OPERACIÓN VS TAKT</div>
+        <div class="h-64">
+          <canvas id="chartOps"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLOQUE 4: PANEL DE ERRORES / ADVERTENCIAS -->
+    <section>
+      <div class="section-title rounded-t-md">MENSAJES DE VALIDACIÓN</div>
+      <div id="errorPanel" class="error-panel text-xs p-2 bg-slate-50 border border-slate-200 rounded-b-md text-slate-800">
+        Sin errores por el momento.
+      </div>
+    </section>
+  </div>
+
+  <script>
+    let chartStations = null;
+    let chartOps = null;
+
+    function safeNumber(v, fallback = 0) {
+      const n = parseFloat(v);
+      return isNaN(n) ? fallback : n;
+    }
+
+    function showMessages(messages, isError = true) {
+      const panel = document.getElementById('errorPanel');
+      if (!messages || messages.length === 0) {
+        panel.textContent = 'Sin errores por el momento.';
+        panel.className = 'error-panel text-xs p-2 bg-slate-50 border border-slate-200 rounded-b-md text-slate-800';
+        return;
+      }
+      panel.innerHTML = '';
+      const ul = document.createElement('ul');
+      ul.className = 'list-disc pl-4 space-y-1';
+      messages.forEach(msg => {
+        const li = document.createElement('li');
+        li.textContent = msg;
+        ul.appendChild(li);
+      });
+      panel.appendChild(ul);
+      panel.classList.remove('text-slate-800', 'bg-slate-50', 'border-slate-200');
+      if (isError) {
+        panel.classList.add('text-red-700', 'bg-red-50', 'border-red-200');
+      } else {
+        panel.classList.add('text-amber-700', 'bg-amber-50', 'border-amber-200');
+      }
+    }
+
+    function createEmptyRow(index) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${index + 1}</td>
+        <td class="input-cell"><input type="text" class="op-code" placeholder="OP10"></td>
+        <td class="input-cell"><input type="text" class="op-desc" placeholder="Corte, costura, etc."></td>
+        <td class="input-cell"><input type="number" min="0" step="0.01" class="op-tiempo-obs"></td>
+        <td class="input-cell"><input type="number" min="1" step="1" class="op-multi" value="1"></td>
+        <td class="input-cell"><input type="number" min="0" step="0.1" class="op-fatiga"></td>
+        <td class="input-cell"><input type="number" min="1" max="100" step="1" class="op-frecuencia"></td>
+        <td class="input-cell"><input type="text" class="op-predecesoras" placeholder="OP10,OP20"></td>
+        <td class="output-cell op-std-time">–</td>
+        <td class="output-cell op-pw">–</td>
+        <td class="output-cell op-station">–</td>
+        <td class="input-cell">
+          <button class="btn bg-rose-600 text-white hover:bg-rose-700 text-[0.65rem] btn-delete-row">X</button>
+        </td>
+      `;
+      return tr;
+    }
+
+    function refreshRowIndices() {
+      const rows = document.querySelectorAll('#tasksBody tr');
+      rows.forEach((tr, idx) => {
+        tr.cells[0].textContent = idx + 1;
+      });
+    }
+
+    function readTasksFromTable(globalFatiga, globalFreq) {
+      const rows = document.querySelectorAll('#tasksBody tr');
+      const tasks = [];
+      rows.forEach(tr => {
+        const code = tr.querySelector('.op-code').value.trim();
+        const desc = tr.querySelector('.op-desc').value.trim();
+        const tObs = safeNumber(tr.querySelector('.op-tiempo-obs').value, 0);
+        const multi = safeNumber(tr.querySelector('.op-multi').value, 1) || 1;
+        const fat = tr.querySelector('.op-fatiga').value.trim();
+        const freq = tr.querySelector('.op-frecuencia').value.trim();
+        const predStr = tr.querySelector('.op-predecesoras').value.trim();
+
+        if (!code || tObs <= 0) return;
+
+        const fatiga = fat === '' ? globalFatiga : safeNumber(fat, 0);
+        const frecuencia = freq === '' ? globalFreq : safeNumber(freq, 100);
+        const preds = predStr
+          ? predStr.split(',').map(s => s.trim()).filter(Boolean)
+          : [];
+
+        const tarea = {
+          code,
+          desc,
+          tObs,
+          multi,
+          fatiga,
+          frecuencia,
+          predecesoras: preds,
+          sucesoras: [],
+          tStd: 0,
+          pw: 0,
+          estacion: null
+        };
+        tasks.push(tarea);
+      });
+      return tasks;
+    }
+
+    function validatePrecedences(tasks) {
+      const msgs = [];
+      const map = new Map();
+      tasks.forEach(t => map.set(t.code, t));
+
+      tasks.forEach(t => {
+        t.predecesoras.forEach(p => {
+          if (!map.has(p)) {
+            msgs.push(`La operación ${t.code} tiene como predecesora ${p}, que no existe en la tabla.`);
+          }
+        });
+      });
+
+      const visiting = new Set();
+      const visited = new Set();
+
+      function dfs(code) {
+        if (visiting.has(code)) {
+          msgs.push(`Se detectó un ciclo en las precedencias que involucra la operación ${code}.`);
+          return;
+        }
+        if (visited.has(code)) return;
+        visiting.add(code);
+        const t = map.get(code);
+        if (t) {
+          t.predecesoras.forEach(p => {
+            if (map.has(p)) dfs(p);
+          });
+        }
+        visiting.delete(code);
+        visited.add(code);
+      }
+
+      tasks.forEach(t => dfs(t.code));
+
+      return msgs;
+    }
+
+    function computeStandardTimes(tasks) {
+      let contenidoTotal = 0;
+      tasks.forEach(t => {
+        const freqFactor = t.frecuencia <= 0 ? 1 : t.frecuencia / 100.0;
+        const fatFactor = 1 + (t.fatiga / 100.0);
+        const tStd = (t.tObs * fatFactor * freqFactor) / (t.multi || 1);
+        t.tStd = tStd;
+        contenidoTotal += tStd;
+      });
+      return contenidoTotal;
+    }
+
+    function buildSuccessors(tasks) {
+      const map = new Map();
+      tasks.forEach(t => {
+        t.sucesoras = [];
+        map.set(t.code, t);
+      });
+      tasks.forEach(t => {
+        t.predecesoras.forEach(p => {
+          const predTask = map.get(p);
+          if (predTask) {
+            predTask.sucesoras.push(t.code);
+          }
+        });
+      });
+    }
+
+    function computePW(tasks) {
+      const map = new Map();
+      tasks.forEach(t => {
+        t.pw = 0;
+        map.set(t.code, t);
+      });
+
+      const memo = new Map();
+
+      function pw(code) {
+        if (memo.has(code)) return memo.get(code);
+        const t = map.get(code);
+        if (!t) return 0;
+        let sum = t.tStd;
+        t.sucesoras.forEach(succCode => {
+          sum += pw(succCode);
+        });
+        memo.set(code, sum);
+        return sum;
+      }
+
+      tasks.forEach(t => {
+        t.pw = pw(t.code);
+      });
+    }
+
+    function assignStationsPW(tasks, takt) {
+      const estaciones = [];
+      if (tasks.length === 0 || takt <= 0) return estaciones;
+
+      const map = new Map();
+      tasks.forEach(t => map.set(t.code, t));
+
+      const unassigned = new Set(tasks.map(t => t.code));
+      let stationId = 1;
+
+      const byPW = tasks.slice().sort((a, b) => b.pw - a.pw);
+
+      function predecessorsAssigned(task) {
+        return task.predecesoras.every(p => !unassigned.has(p));
+      }
+
+      while (unassigned.size > 0) {
+        let stationTime = 0;
+        const stationTasks = [];
+
+        while (true) {
+          const candidates = byPW.filter(t =>
+            unassigned.has(t.code) && predecessorsAssigned(t)
+          );
+          if (candidates.length === 0) break;
+
+          const remaining = takt - stationTime;
+          let chosen = null;
+          for (const cand of candidates) {
+            if (cand.tStd <= remaining) {
+              chosen = cand;
+              break;
+            }
+          }
+
+          if (!chosen) {
+            if (stationTasks.length === 0) {
+              chosen = candidates[0];
+            } else {
+              break;
+            }
+          }
+
+          stationTasks.push(chosen.code);
+          stationTime += chosen.tStd;
+          chosen.estacion = stationId;
+          unassigned.delete(chosen.code);
+
+          if (stationTime >= takt) break;
+        }
+
+        estaciones.push({
+          id: stationId,
+          tasks: stationTasks,
+          time: stationTime
+        });
+        stationId++;
+      }
+
+      return estaciones;
+    }
+
+    function computeKPIs(tasks, estaciones, takt, tiempoDisponibleSeg) {
+      const contenidoTotal = tasks.reduce((s, t) => s + t.tStd, 0);
+      const nEstReales = estaciones.length || 0;
+
+      let eficiencia = 0;
+      let tiempoOcioso = 0;
+      if (takt > 0 && nEstReales > 0) {
+        eficiencia = (contenidoTotal / (nEstReales * takt)) * 100;
+        tiempoOcioso = (nEstReales * takt) - contenidoTotal;
+      }
+
+      let maxOpTime = 0;
+      tasks.forEach(t => {
+        if (t.tStd > maxOpTime) maxOpTime = t.tStd;
+      });
+
+      let maxStationTime = 0;
+      estaciones.forEach(e => {
+        if (e.time > maxStationTime) maxStationTime = e.time;
+      });
+
+      const cuelloSeg = maxOpTime > takt ? maxOpTime : maxStationTime;
+
+      let capacidadHora = 0;
+      let capacidadDia = 0;
+      if (cuelloSeg > 0) {
+        capacidadHora = 3600 / cuelloSeg;
+        capacidadDia = tiempoDisponibleSeg / cuelloSeg;
+      }
+
+      return {
+        contenidoTotal,
+        nEstReales,
+        eficiencia,
+        tiempoOcioso,
+        capacidadHora,
+        capacidadDia,
+        cuelloSeg,
+        maxOpTime,
+        maxStationTime
+      };
+    }
+
+    function updateTableOutputs(tasks, takt) {
+      const rows = document.querySelectorAll('#tasksBody tr');
+      const map = new Map();
+      tasks.forEach(t => map.set(t.code, t));
+
+      rows.forEach(tr => {
+        const code = tr.querySelector('.op-code').value.trim();
+        const tStdCell = tr.querySelector('.op-std-time');
+        const pwCell = tr.querySelector('.op-pw');
+        const stCell = tr.querySelector('.op-station');
+
+        tr.classList.remove('op-over-takt');
+        if (!code || !map.has(code)) {
+          tStdCell.textContent = '–';
+          pwCell.textContent = '–';
+          stCell.textContent = '–';
+          return;
+        }
+
+        const t = map.get(code);
+        tStdCell.textContent = t.tStd.toFixed(2);
+        pwCell.textContent = t.pw.toFixed(2);
+        stCell.textContent = t.estacion ? `E${t.estacion}` : '–';
+
+        if (t.tStd > takt && takt > 0) {
+          tr.classList.add('op-over-takt');
+        }
+      });
+    }
+
+    function updateSummaryLabels(kpis, takt, contenidoTotal, nMinEst) {
+      document.getElementById('taktLabel').textContent =
+        takt > 0 ? takt.toFixed(2) : '–';
+
+      document.getElementById('contenidoTotalLabel').textContent =
+        contenidoTotal > 0 ? contenidoTotal.toFixed(2) : '–';
+
+      document.getElementById('nMinEstLabel').textContent =
+        nMinEst > 0 ? nMinEst.toString() : '–';
+
+      document.getElementById('nEstRealesLabel').textContent =
+        kpis.nEstReales > 0 ? kpis.nEstReales.toString() : '–';
+
+      document.getElementById('eficienciaLabel').textContent =
+        kpis.eficiencia > 0 ? kpis.eficiencia.toFixed(1) + ' %' : '–';
+
+      document.getElementById('tiempoOciosoLabel').textContent =
+        kpis.nEstReales > 0 ? kpis.tiempoOcioso.toFixed(2) + ' seg/pza' : '–';
+
+      document.getElementById('capacidadHoraLabel').textContent =
+        kpis.capacidadHora > 0 ? kpis.capacidadHora.toFixed(1) : '–';
+
+      document.getElementById('capacidadDiaLabel').textContent =
+        kpis.capacidadDia > 0 ? kpis.capacidadDia.toFixed(0) : '–';
+
+      const diag = [];
+      if (takt <= 0) {
+        diag.push('No se pudo calcular Takt (revisá tiempo disponible y demanda).');
+      } else {
+        diag.push(`Takt: ${takt.toFixed(2)} seg/pza.`);
+      }
+      if (kpis.maxOpTime > takt && takt > 0) {
+        diag.push(
+          `Hay al menos una operación con tiempo estándar (${kpis.maxOpTime.toFixed(
+            2
+          )} seg/pza) mayor al Takt. La línea NO puede cumplir la demanda actual.`
+        );
+      }
+      if (kpis.nEstReales > 0) {
+        diag.push(
+          `La capacidad real aproximada es ${kpis.capacidadDia.toFixed(
+            0
+          )} pzs/día con el cuello de botella actual.`
+        );
+      }
+
+      document.getElementById('diagnosticoLabel').textContent =
+        diag.length > 0 ? diag.join(' ') : 'Cargá datos y presioná "Recalcular".';
+    }
+
+    function updateCharts(tasks, estaciones, takt) {
+      const ctxStations = document.getElementById('chartStations').getContext('2d');
+      const ctxOps = document.getElementById('chartOps').getContext('2d');
+
+      const stationLabels = estaciones.map(e => 'E' + e.id);
+      const stationTimes = estaciones.map(e => e.time);
+      const stationColors = estaciones.map(e => {
+        if (takt <= 0) return 'rgba(148,163,184,0.8)';
+        const ratio = e.time / takt;
+        if (ratio > 1) return 'rgba(248,113,113,0.9)';
+        if (ratio >= 0.8) return 'rgba(52,211,153,0.9)';
+        return 'rgba(203,213,225,0.9)';
+      });
+
+      const taktStations = estaciones.map(() => takt);
+
+      const opLabels = tasks.map(t => t.code);
+      const opTimes = tasks.map(t => t.tStd);
+      const opColors = tasks.map(t => {
+        if (takt <= 0) return 'rgba(148,163,184,0.8)';
+        const ratio = t.tStd / takt;
+        if (ratio > 1) return 'rgba(248,113,113,0.9)';
+        if (ratio >= 0.8) return 'rgba(52,211,153,0.9)';
+        return 'rgba(203,213,225,0.9)';
+      });
+      const taktOps = tasks.map(() => takt);
+
+      if (chartStations) chartStations.destroy();
+      chartStations = new Chart(ctxStations, {
+        type: 'bar',
+        data: {
+          labels: stationLabels,
+          datasets: [
+            {
+              label: 'Carga de estación (seg/pza)',
+              data: stationTimes,
+              backgroundColor: stationColors
+            },
+            {
+              label: 'Takt time',
+              type: 'line',
+              data: taktStations,
+              borderColor: 'rgba(59,130,246,1)',
+              backgroundColor: 'rgba(59,130,246,0.1)',
+              borderWidth: 2,
+              pointRadius: 0,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+
+      if (chartOps) chartOps.destroy();
+      chartOps = new Chart(ctxOps, {
+        type: 'bar',
+        data: {
+          labels: opLabels,
+          datasets: [
+            {
+              label: 'Tiempo estándar op. (seg/pza)',
+              data: opTimes,
+              backgroundColor: opColors
+            },
+            {
+              label: 'Takt time',
+              type: 'line',
+              data: taktOps,
+              borderColor: 'rgba(59,130,246,1)',
+              backgroundColor: 'rgba(59,130,246,0.1)',
+              borderWidth: 2,
+              pointRadius: 0,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    function getStateFromUI() {
+      const tiempoDisponibleMin = safeNumber(document.getElementById('tiempoDisponibleMin').value, 0);
+      const demandaDiaria = safeNumber(document.getElementById('demandaDiaria').value, 0);
+      const fatigaGlobal = safeNumber(document.getElementById('fatigaGlobal').value, 0);
+      const frecuenciaGlobal = safeNumber(document.getElementById('frecuenciaGlobal').value, 100);
+
+      const rows = document.querySelectorAll('#tasksBody tr');
+      const tasks = [];
+      rows.forEach(tr => {
+        tasks.push({
+          code: tr.querySelector('.op-code').value,
+          desc: tr.querySelector('.op-desc').value,
+          tObs: tr.querySelector('.op-tiempo-obs').value,
+          multi: tr.querySelector('.op-multi').value,
+          fatiga: tr.querySelector('.op-fatiga').value,
+          frecuencia: tr.querySelector('.op-frecuencia').value,
+          predecesoras: tr.querySelector('.op-predecesoras').value
+        });
+      });
+
+      return {
+        meta: {
+          note: document.getElementById('scenarioNote').value,
+          savedAt: new Date().toISOString()
+        },
+        params: {
+          tiempoDisponibleMin,
+          demandaDiaria,
+          fatigaGlobal,
+          frecuenciaGlobal
+        },
+        tasks
+      };
+    }
+
+    function applyStateToUI(state) {
+      if (!state) return;
+      document.getElementById('tiempoDisponibleMin').value = state.params.tiempoDisponibleMin ?? 0;
+      document.getElementById('demandaDiaria').value = state.params.demandaDiaria ?? 0;
+      document.getElementById('fatigaGlobal').value = state.params.fatigaGlobal ?? 0;
+      document.getElementById('frecuenciaGlobal').value = state.params.frecuenciaGlobal ?? 100;
+      document.getElementById('scenarioNote').value = state.meta && state.meta.note ? state.meta.note : '';
+
+      const tbody = document.getElementById('tasksBody');
+      tbody.innerHTML = '';
+      (state.tasks || []).forEach((t, idx) => {
+        const tr = createEmptyRow(idx);
+        tr.querySelector('.op-code').value = t.code ?? '';
+        tr.querySelector('.op-desc').value = t.desc ?? '';
+        tr.querySelector('.op-tiempo-obs').value = t.tObs ?? '';
+        tr.querySelector('.op-multi').value = t.multi ?? 1;
+        tr.querySelector('.op-fatiga').value = t.fatiga ?? '';
+        tr.querySelector('.op-frecuencia').value = t.frecuencia ?? '';
+        tr.querySelector('.op-predecesoras').value = t.predecesoras ?? '';
+        tbody.appendChild(tr);
+      });
+      if (tbody.children.length === 0) {
+        tbody.appendChild(createEmptyRow(0));
+      }
+      attachRowDeleteHandlers();
+      refreshRowIndices();
+    }
+
+    function attachRowDeleteHandlers() {
+      document.querySelectorAll('.btn-delete-row').forEach(btn => {
+        btn.onclick = () => {
+          const tr = btn.closest('tr');
+          tr.remove();
+          refreshRowIndices();
+        };
+      });
+    }
+
+    function clearAll() {
+      document.getElementById('tiempoDisponibleMin').value = 480;
+      document.getElementById('demandaDiaria').value = 500;
+      document.getElementById('fatigaGlobal').value = 15;
+      document.getElementById('frecuenciaGlobal').value = 100;
+      document.getElementById('scenarioName').value = '';
+      document.getElementById('scenarioNote').value = '';
+
+      const tbody = document.getElementById('tasksBody');
+      tbody.innerHTML = '';
+      tbody.appendChild(createEmptyRow(0));
+      attachRowDeleteHandlers();
+      refreshRowIndices();
+
+      if (chartStations) chartStations.destroy();
+      if (chartOps) chartOps.destroy();
+      chartStations = null;
+      chartOps = null;
+
+      document.getElementById('taktLabel').textContent = '–';
+      document.getElementById('contenidoTotalLabel').textContent = '–';
+      document.getElementById('nMinEstLabel').textContent = '–';
+      document.getElementById('nEstRealesLabel').textContent = '–';
+      document.getElementById('eficienciaLabel').textContent = '–';
+      document.getElementById('tiempoOciosoLabel').textContent = '–';
+      document.getElementById('capacidadHoraLabel').textContent = '–';
+      document.getElementById('capacidadDiaLabel').textContent = '–';
+      document.getElementById('diagnosticoLabel').textContent =
+        'Cargá datos y presioná "Recalcular".';
+
+      showMessages([]);
+    }
+
+    function recalculateAll() {
+      const messages = [];
+
+      try {
+        const tiempoDisponibleMin = safeNumber(document.getElementById('tiempoDisponibleMin').value, 0);
+        const demandaDiaria = safeNumber(document.getElementById('demandaDiaria').value, 0);
+        const fatigaGlobal = safeNumber(document.getElementById('fatigaGlobal').value, 0);
+        const frecuenciaGlobal = safeNumber(document.getElementById('frecuenciaGlobal').value, 100);
+
+        if (tiempoDisponibleMin <= 0) {
+          messages.push('El tiempo disponible por día debe ser mayor a 0.');
+        }
+        if (demandaDiaria <= 0) {
+          messages.push('La demanda diaria debe ser mayor a 0.');
+        }
+
+        const tasks = readTasksFromTable(fatigaGlobal, frecuenciaGlobal);
+        if (tasks.length === 0) {
+          messages.push('No hay operaciones con código y tiempo observado > 0. Cargá al menos una.');
+        }
+
+        if (messages.length > 0) {
+          showMessages(messages, true);
+          return;
+        }
+
+        const tiempoDisponibleSeg = tiempoDisponibleMin * 60;
+        const takt = tiempoDisponibleSeg / demandaDiaria;
+
+        const contenidoTotal = computeStandardTimes(tasks);
+
+        buildSuccessors(tasks);
+        const precMsgs = validatePrecedences(tasks);
+        if (precMsgs.length > 0) {
+          messages.push(...precMsgs);
+          updateTableOutputs(tasks, takt);
+          updateSummaryLabels(
+            {
+              contenidoTotal,
+              nEstReales: 0,
+              eficiencia: 0,
+              tiempoOcioso: 0,
+              capacidadHora: 0,
+              capacidadDia: 0,
+              cuelloSeg: 0,
+              maxOpTime: 0,
+              maxStationTime: 0
+            },
+            takt,
+            contenidoTotal,
+            0
+          );
+          if (chartStations) chartStations.destroy();
+          if (chartOps) chartOps.destroy();
+          chartStations = null;
+          chartOps = null;
+          showMessages(messages, true);
+          return;
+        }
+
+        computePW(tasks);
+        const estaciones = assignStationsPW(tasks, takt);
+
+        const nMinEst = takt > 0 ? Math.ceil(contenidoTotal / takt) : 0;
+        const kpis = computeKPIs(tasks, estaciones, takt, tiempoDisponibleSeg);
+
+        updateTableOutputs(tasks, takt);
+        updateSummaryLabels(kpis, takt, contenidoTotal, nMinEst);
+        updateCharts(tasks, estaciones, takt);
+
+        if (kpis.maxOpTime > takt && takt > 0) {
+          messages.push(
+            'Advertencia: hay operaciones con tiempo estándar mayor al Takt. La línea no puede cumplir la demanda.'
+          );
+        }
+        if (estaciones.length < nMinEst && estaciones.length > 0) {
+          messages.push(
+            `Advertencia: el número de estaciones PW (${estaciones.length}) es menor al mínimo teórico (${nMinEst}). Revisá las entradas.`
+          );
+        }
+
+        if (messages.length > 0) {
+          showMessages(messages, false);
+        } else {
+          showMessages([]);
+        }
+      } catch (e) {
+        console.error(e);
+        showMessages(
+          ['Ocurrió un error inesperado en los cálculos: ' + e.message],
+          true
+        );
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const tbody = document.getElementById('tasksBody');
+      tbody.appendChild(createEmptyRow(0));
+      attachRowDeleteHandlers();
+      refreshRowIndices();
+
+      document.getElementById('btnAddRow').addEventListener('click', () => {
+        const idx = document.querySelectorAll('#tasksBody tr').length;
+        const tr = createEmptyRow(idx);
+        document.getElementById('tasksBody').appendChild(tr);
+        attachRowDeleteHandlers();
+        refreshRowIndices();
+      });
+
+      document.getElementById('btnRecalcular').addEventListener('click', recalculateAll);
+
+      document.getElementById('btnClear').addEventListener('click', () => {
+        if (confirm('¿Seguro que querés limpiar todos los datos de la pantalla?')) {
+          clearAll();
+        }
+      });
+
+      document.getElementById('btnSave').addEventListener('click', () => {
+        const name = document.getElementById('scenarioName').value.trim();
+        if (!name) {
+          showMessages(['Escribí un nombre de escenario antes de guardar.'], true);
+          return;
+        }
+        const state = getStateFromUI();
+        try {
+          localStorage.setItem('lb_scenario_' + name, JSON.stringify(state));
+          showMessages([`Escenario "${name}" guardado correctamente en este navegador.`], false);
+        } catch (e) {
+          showMessages(
+            ['No se pudo guardar el escenario (revisá permisos de almacenamiento del navegador).'],
+            true
+          );
+        }
+      });
+
+      document.getElementById('btnLoad').addEventListener('click', () => {
+        const name = document.getElementById('scenarioName').value.trim();
+        if (!name) {
+          showMessages(['Escribí el nombre del escenario que querés cargar.'], true);
+          return;
+        }
+        const raw = localStorage.getItem('lb_scenario_' + name);
+        if (!raw) {
+          showMessages([`No se encontró el escenario "${name}" en este navegador.`], true);
+          return;
+        }
+        try {
+          const state = JSON.parse(raw);
+          applyStateToUI(state);
+          showMessages([`Escenario "${name}" cargado. Recordá presionar "Recalcular".`], false);
+        } catch (e) {
+          showMessages(['No se pudo leer el escenario guardado (JSON inválido).'], true);
+        }
+      });
+
+      recalculateAll();
+    });
+  </script>
+</body>
+</html>
