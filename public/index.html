@@ -9,9 +9,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 </head>
 <body>
-    <h1>Módulo de Balanceo de Líneas</h1>
+    <h1 class="welcome-animation">Módulo de Balanceo de Líneas</h1>
 
-    <div class="project-controls">
+    <div class="project-controls welcome-animation">
         <button onclick="saveProject()">Guardar Proyecto</button>
         <label for="load-project-input" class="button">Cargar Proyecto</label>
         <input type="file" id="load-project-input" onchange="loadProject(event)" accept=".json" style="display: none;">
@@ -19,7 +19,7 @@
     </div>
     <div class="container">
         <!-- Sección de Parámetros de Producción -->
-        <div class="section">
+        <div class="section welcome-animation">
             <h2>I. Parámetros de Producción</h2>
             <form id="production-params-form">
                 <label for="daily-demand">Demanda Diaria (Unidades Requeridas):</label>

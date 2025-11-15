@@ -5,6 +5,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const taskForm = document.getElementById('task-form');
     taskForm.addEventListener('submit', addTask);
 
+    // Welcome animation
+    const welcomeElements = document.querySelectorAll('.welcome-animation');
+    welcomeElements.forEach((el, index) => {
+        setTimeout(() => {
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+        }, index * 200);
+    });
+
     // Renderizar el diagrama inicial (vacío)
     drawPrecedenceDiagram();
 });
@@ -54,6 +63,9 @@ function calculateCycleTime() {
     resultDiv.innerHTML = `
         <p>Tiempo de Ciclo (Takt Time): <strong>${cycleTime.toFixed(2)} segundos/unidad</strong></p>
     `;
+    resultDiv.classList.remove('animated');
+    void resultDiv.offsetWidth; // Trigger reflow
+    resultDiv.classList.add('animated');
 }
 
 /**
@@ -190,6 +202,9 @@ function updateTotalWorkContent() {
     totalWorkContentDiv.innerHTML = `
         <p>Contenido Total de Trabajo: <strong>${total.toFixed(2)} segundos</strong></p>
     `;
+    totalWorkContentDiv.classList.remove('animated');
+    void totalWorkContentDiv.offsetWidth; // Trigger reflow
+    totalWorkContentDiv.classList.add('animated');
 }
 
 /**
@@ -215,6 +230,9 @@ function calculateMinimumStations() {
         <p>Tiempo de Ciclo: ${cycleTime.toFixed(2)}s</p>
         <p>Número Mínimo de Estaciones (M): <strong>${minStations}</strong></p>
     `;
+    resultDiv.classList.remove('animated');
+    void resultDiv.offsetWidth; // Trigger reflow
+    resultDiv.classList.add('animated');
 }
 
 /**
