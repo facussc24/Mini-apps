@@ -1,5 +1,7 @@
+/* ============================================================================
+   GENERAL STYLES AND BODY
+   ============================================================================ */
 
-/* General Body Styles */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
@@ -11,7 +13,10 @@ body {
     align-items: center;
 }
 
-/* Header Styles */
+/* ============================================================================
+   HEADER AND TITLE STYLES
+   ============================================================================ */
+
 h1 {
     color: #2c3e50;
     text-align: center;
@@ -20,7 +25,10 @@ h1 {
     animation: fadeInDown 1s ease-in-out;
 }
 
-/* Project Controls */
+/* ============================================================================
+   CONTROL AND CONTAINER LAYOUT
+   ============================================================================ */
+
 .project-controls {
     display: flex;
     justify-content: center;
@@ -30,7 +38,6 @@ h1 {
     animation: fadeInUp 1s ease-in-out;
 }
 
-/* Main Container */
 .container {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -39,7 +46,10 @@ h1 {
     margin-bottom: 20px;
 }
 
-/* Section Styles */
+/* ============================================================================
+   SECTION STYLES
+   ============================================================================ */
+
 .section {
     background-color: #ffffff;
     padding: 20px;
@@ -54,7 +64,17 @@ h1 {
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Form Styles */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+/* ============================================================================
+   FORM STYLES
+   ============================================================================ */
+
 form {
     display: flex;
     flex-direction: column;
@@ -83,8 +103,12 @@ input[type="number"]:focus {
     outline: none;
 }
 
-/* Button Styles */
-button, .button {
+/* ============================================================================
+   BUTTON STYLES
+   ============================================================================ */
+
+button,
+.button {
     background-color: #3498db;
     color: white;
     padding: 12px 18px;
@@ -96,20 +120,26 @@ button, .button {
     text-align: center;
 }
 
-button:hover, .button:hover {
+button:hover,
+.button:hover {
     background-color: #2980b9;
     transform: translateY(-2px);
 }
 
-.danger {
+.danger,
+#clear-all-btn {
     background-color: #e74c3c;
 }
 
-.danger:hover {
+.danger:hover,
+#clear-all-btn:hover {
     background-color: #c0392b;
 }
 
-/* Result and Error Styles */
+/* ============================================================================
+   RESULT AND ERROR MESSAGE STYLES
+   ============================================================================ */
+
 .result {
     margin-top: 15px;
     padding: 12px;
@@ -129,14 +159,18 @@ button:hover, .button:hover {
     border-left-color: #c0392b;
 }
 
-/* Table Styles */
+/* ============================================================================
+   TABLE STYLES
+   ============================================================================ */
+
 table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
 }
 
-th, td {
+th,
+td {
     padding: 14px;
     text-align: left;
     border-bottom: 1px solid #ddd;
@@ -155,11 +189,29 @@ tbody tr:hover {
     background-color: #eaf2f8;
 }
 
-/* Diagram and Result Containers */
+.task-row {
+    cursor: pointer;
+}
+
+.instruction-text {
+    font-style: italic;
+    color: #7f8c8d;
+    text-align: center;
+    margin-top: 10px;
+}
+
+/* ============================================================================
+   DIAGRAM AND VISUALIZATION STYLES
+   ============================================================================ */
+
 #precedence-diagram {
     max-width: 100%;
     margin-top: 20px;
 }
+
+/* ============================================================================
+   RESULT CONTAINERS AND STATION STYLES
+   ============================================================================ */
 
 .result-container {
     margin-top: 20px;
@@ -185,13 +237,21 @@ tbody tr:hover {
     padding-bottom: 5px;
 }
 
+.station.bottleneck {
+    border: 2px solid #c0392b;
+    background-color: #f9e4e4;
+}
+
 .metrics {
     margin-top: 20px;
     padding-top: 20px;
     border-top: 2px solid #3498db;
 }
 
-/* Progress Bar Styles */
+/* ============================================================================
+   PROGRESS BAR STYLES
+   ============================================================================ */
+
 .progress-bar-container {
     width: 100%;
     background-color: #e0e0e0;
@@ -209,45 +269,20 @@ tbody tr:hover {
     transition: width 0.5s ease-in-out;
 }
 
-.station.bottleneck {
-    border: 2px solid #c0392b;
-    background-color: #f9e4e4;
-}
+/* ============================================================================
+   ANIMATION STYLES
+   ============================================================================ */
 
-.task-row {
-    cursor: pointer;
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-#clear-all-btn {
-    background-color: #e74c3c;
-}
-
-#clear-all-btn:hover {
-    background-color: #c0392b;
-}
-
-.instruction-text {
-    font-style: italic;
-    color: #7f8c8d;
-    text-align: center;
-    margin-top: 10px;
-}
-
-/* Welcome Animation */
 .welcome-animation {
     opacity: 0;
     transform: translateY(20px);
     transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
 }
 
-/* Keyframe Animations */
+/* ============================================================================
+   KEYFRAME ANIMATIONS
+   ============================================================================ */
+
 @keyframes fadeInDown {
     from {
         opacity: 0;
