@@ -11,6 +11,12 @@
 <body>
     <h1>Módulo de Balanceo de Líneas</h1>
 
+    <div class="project-controls">
+        <button onclick="saveProject()">Guardar Proyecto</button>
+        <label for="load-project-input" class="button">Cargar Proyecto</label>
+        <input type="file" id="load-project-input" onchange="loadProject(event)" accept=".json" style="display: none;">
+        <button type="button" class="danger" onclick="clearAllData()">Limpiar Sesión</button>
+    </div>
     <div class="container">
         <!-- Sección de Parámetros de Producción -->
         <div class="section">

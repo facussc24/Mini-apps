@@ -14,6 +14,26 @@ let cycleTime = 0;
 let chartInstance = null;
 let lastBalancingResult = { stations: [] }; // Almacenar el último resultado del balanceo
 
+// Expose variables and functions for testing purposes
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        // State accessors for tests
+        getCycleTime: () => cycleTime,
+        getTasks: () => tasks,
+        getLastBalancingResult: () => lastBalancingResult,
+        _setCycleTime: (value) => { cycleTime = value; },
+        _getTasksRef: () => tasks,
+
+        // Functions
+        calculateCycleTime,
+        addTask,
+        calculateMinimumStations,
+        calculatePositionalWeight,
+        balanceLine,
+        clearAllData,
+    };
+}
+
 /**
  * Calcula el Tiempo de Ciclo (Takt Time) basado en la demanda y el tiempo disponible.
  */
@@ -703,4 +723,63 @@ function clearAllData() {
     document.getElementById('task-form').removeAttribute('data-editing-index');
     document.querySelector('#task-form button[type="submit"]').textContent = 'Agregar Tarea';
     document.getElementById('task-id').disabled = false;
+}
+
+/**
+ * Guarda el estado actual del proyecto (parámetros y tareas) en un archivo JSON.
+ */
+function saveProject() {
+    const projectData = {
+        dailyDemand: document.getElementById('daily-demand').value,
+        productionTime: document.getElementById('production-time').value,
+        tasks: tasks
+    };
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(projectData, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "proyecto_balanceo.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+}
+
+/**
+ * Carga un proyecto desde un archivo JSON y restaura el estado de la aplicación.
+ * @param {Event} event - El evento de cambio del input de archivo.
+ */
+function loadProject(event) {
+    const file = event.target.files[0];
+    if (!file) {
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const projectData = JSON.parse(e.target.result);
+
+            // Limpiar estado actual
+            clearAllData();
+
+            // Cargar nuevos datos
+            document.getElementById('daily-demand').value = projectData.dailyDemand || '';
+            document.getElementById('production-time').value = projectData.productionTime || '';
+            tasks = projectData.tasks || [];
+
+            // Recalcular y actualizar la UI
+            calculateCycleTime();
+            updateTasksTable();
+            updateTotalWorkContent();
+            drawPrecedenceDiagram();
+
+        } catch (error) {
+            alert('Error al leer el archivo del proyecto. Asegúrese de que sea un archivo JSON válido.');
+            console.error(error);
+        }
+    };
+    reader.readAsText(file);
+
+    // Resetear el input para permitir cargar el mismo archivo de nuevo
+    event.target.value = '';
 }
