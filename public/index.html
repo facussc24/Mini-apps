@@ -1,26 +1,107 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mi Aplicación Local</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balanceo de Líneas</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 </head>
 <body>
-  <h1>Gestor de Archivos Local</h1>
-  <div id="file-manager">
-    <!-- Aquí se mostrarán los archivos y las opciones para gestionarlos -->
-  </div>
+    <h1>Módulo de Balanceo de Líneas</h1>
 
-  <h2>Crear nuevo archivo</h2>
-  <form id="create-file-form">
-    <input type="text" id="filename" placeholder="Nombre del archivo" required>
-    <br>
-    <textarea id="file-content" placeholder="Contenido del archivo" required></textarea>
-    <br>
-    <button type="submit">Crear archivo</button>
-  </form>
+    <div class="container">
+        <!-- Sección de Parámetros de Producción -->
+        <div class="section">
+            <h2>I. Parámetros de Producción</h2>
+            <form id="production-params-form">
+                <label for="daily-demand">Demanda Diaria (Unidades Requeridas):</label>
+                <input type="number" id="daily-demand" required>
 
-  <script src="app.js"></script>
+                <label for="production-time">Tiempo de Producción Disponible (minutos):</label>
+                <input type="number" id="production-time" required>
+
+                <button type="button" onclick="calculateCycleTime()">Calcular Tiempo de Ciclo</button>
+            </form>
+            <div id="cycle-time-result" class="result"></div>
+        </div>
+
+        <!-- Sección de Captura de Tiempos Estándar -->
+        <div class="section">
+            <h2>II. Captura de Tiempos Estándar</h2>
+            <form id="task-form">
+                <label for="task-id">Identificador de Tarea (ej. A, B, C):</label>
+                <input type="text" id="task-id" required>
+
+                <label for="task-description">Descripción de la Tarea:</label>
+                <input type="text" id="task-description" required>
+
+                <label for="gross-time">Tiempos de Ejecución Brutos (segundos, separados por coma):</label>
+                <input type="text" id="gross-time" placeholder="ej. 10, 10.5, 11" required>
+
+                <label for="fatigue-factor">Factor de Fatiga/Tolerancia (%):</label>
+                <input type="number" id="fatigue-factor" value="15" required>
+
+                <label for="predecessor-task">Tarea Predecesora (ej. A, B):</label>
+                <input type="text" id="predecessor-task">
+
+                <label for="task-tools">Herramientas y Materiales:</label>
+                <input type="text" id="task-tools" placeholder="ej. Llave de torque, guantes">
+
+                <button type="submit">Agregar Tarea</button>
+            </form>
+            <div id="total-work-content" class="result"></div>
+        </div>
+    </div>
+
+    <!-- Tabla de Tareas -->
+    <div class="section">
+        <div class="section-header">
+            <h2>Tareas Ingresadas</h2>
+            <button type="button" id="clear-all-btn" onclick="clearAllData()">Limpiar Todo</button>
+        </div>
+        <table id="tasks-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Descripción</th>
+                    <th>Tiempo Bruto (s)</th>
+                    <th>Factor Fatiga (%)</th>
+                    <th>Tiempo Estándar (s)</th>
+                    <th>Predecesora</th>
+                    <th>Herramientas</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Las tareas se agregarán aquí dinámicamente -->
+            </tbody>
+        </table>
+        <p class="instruction-text">Haga clic en una fila de la tabla para editar una tarea.</p>
+    </div>
+
+    <!-- Diagrama de Precedencias -->
+    <div class="section">
+        <h2>III. Diagrama de Precedencias</h2>
+        <canvas id="precedence-diagram" width="800" height="400"></canvas>
+    </div>
+
+    <!-- Sección de Cálculo de Estaciones Mínimas -->
+    <div class="section">
+        <h2>IV. Cálculo de Estaciones Mínimas</h2>
+        <button type="button" onclick="calculateMinimumStations()">Calcular Estaciones Mínimas</button>
+        <div id="min-stations-result" class="result"></div>
+    </div>
+
+    <!-- Sección de Balanceo de Línea -->
+    <div class="section">
+        <h2>V. Balanceo de Línea por Peso Posicional</h2>
+        <button type="button" onclick="balanceLine()">Realizar Balanceo</button>
+        <button type="button" id="generate-report-btn" onclick="generateReport()" style="margin-left: 10px;">Generar Reporte</button>
+        <div id="balancing-results" class="result-container"></div>
+    </div>
+
+
+    <script src="app.js"></script>
 </body>
 </html>
