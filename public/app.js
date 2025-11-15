@@ -1,3 +1,7 @@
+// ============================================================================
+// INITIALIZATION AND SETUP
+// ============================================================================
+
 document.addEventListener('DOMContentLoaded', () => {
     // Inicializar Chart.js y registrar plugins
     Chart.register(ChartDataLabels);
@@ -18,22 +22,26 @@ document.addEventListener('DOMContentLoaded', () => {
     drawPrecedenceDiagram();
 });
 
+// ============================================================================
+// STATE VARIABLES
+// ============================================================================
+
 let tasks = [];
 let cycleTime = 0;
 let chartInstance = null;
-let lastBalancingResult = { stations: [] }; // Almacenar el último resultado del balanceo
+let lastBalancingResult = { stations: [] };
 
-// Expose variables and functions for testing purposes
+// ============================================================================
+// EXPORTS FOR TESTING
+// ============================================================================
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
-        // State accessors for tests
         getCycleTime: () => cycleTime,
         getTasks: () => tasks,
         getLastBalancingResult: () => lastBalancingResult,
         _setCycleTime: (value) => { cycleTime = value; },
         _getTasksRef: () => tasks,
-
-        // Functions
         calculateCycleTime,
         addTask,
         calculateMinimumStations,
@@ -42,6 +50,10 @@ if (typeof module !== 'undefined' && module.exports) {
         clearAllData,
     };
 }
+
+// ============================================================================
+// CALCULATION FUNCTIONS
+// ============================================================================
 
 /**
  * Calcula el Tiempo de Ciclo (Takt Time) basado en la demanda y el tiempo disponible.
@@ -69,6 +81,60 @@ function calculateCycleTime() {
 }
 
 /**
+ * Calcula el número mínimo teórico de estaciones de trabajo.
+ */
+function calculateMinimumStations() {
+    const resultDiv = document.getElementById('min-stations-result');
+
+    if (cycleTime <= 0) {
+        resultDiv.innerHTML = '<p class="error">Calcule primero el Tiempo de Ciclo.</p>';
+        return;
+    }
+    if (tasks.length === 0) {
+        resultDiv.innerHTML = '<p class="error">Agregue al menos una tarea.</p>';
+        return;
+    }
+
+    const totalWorkContent = tasks.reduce((sum, task) => sum + task.standardTime, 0);
+    const minStations = Math.ceil(totalWorkContent / cycleTime);
+
+    resultDiv.innerHTML = `
+        <p>Suma de Tiempos: ${totalWorkContent.toFixed(2)}s</p>
+        <p>Tiempo de Ciclo: ${cycleTime.toFixed(2)}s</p>
+        <p>Número Mínimo de Estaciones (M): <strong>${minStations}</strong></p>
+    `;
+    resultDiv.classList.remove('animated');
+    void resultDiv.offsetWidth;
+    resultDiv.classList.add('animated');
+}
+
+/**
+ * Calcula el Peso Posicional de una tarea.
+ * @param {string} taskId - El ID de la tarea.
+ * @returns {number} - El Peso Posicional.
+ */
+function calculatePositionalWeight(taskId) {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return 0;
+
+    let weight = task.standardTime;
+    const successors = getSuccessors(taskId);
+
+    successors.forEach(successorId => {
+        const successorTask = tasks.find(t => t.id === successorId);
+        if (successorTask) {
+            weight += successorTask.standardTime;
+        }
+    });
+
+    return weight;
+}
+
+// ============================================================================
+// TASK MANAGEMENT FUNCTIONS
+// ============================================================================
+
+/**
  * Agrega una nueva tarea a la lista, actualiza la tabla y el diagrama.
  * @param {Event} event - El evento de envío del formulario.
  */
@@ -90,7 +156,6 @@ function addTask(event) {
         return;
     }
     const averageGrossTime = grossTimes.reduce((a, b) => a + b, 0) / grossTimes.length;
-
 
     // Validaciones
     if (!id || !description || isNaN(averageGrossTime) || isNaN(fatigueFactor)) {
@@ -167,6 +232,10 @@ function populateFormForEdit(taskIndex) {
     document.querySelector('#task-form button[type="submit"]').textContent = 'Actualizar Tarea';
 }
 
+// ============================================================================
+// UI UPDATE FUNCTIONS
+// ============================================================================
+
 /**
  * Actualiza la tabla de tareas en la interfaz de usuario.
  */
@@ -207,33 +276,9 @@ function updateTotalWorkContent() {
     totalWorkContentDiv.classList.add('animated');
 }
 
-/**
- * Calcula el número mínimo teórico de estaciones de trabajo.
- */
-function calculateMinimumStations() {
-    const resultDiv = document.getElementById('min-stations-result');
-
-    if (cycleTime <= 0) {
-        resultDiv.innerHTML = '<p class="error">Calcule primero el Tiempo de Ciclo.</p>';
-        return;
-    }
-    if (tasks.length === 0) {
-        resultDiv.innerHTML = '<p class="error">Agregue al menos una tarea.</p>';
-        return;
-    }
-
-    const totalWorkContent = tasks.reduce((sum, task) => sum + task.standardTime, 0);
-    const minStations = Math.ceil(totalWorkContent / cycleTime);
-
-    resultDiv.innerHTML = `
-        <p>Suma de Tiempos: ${totalWorkContent.toFixed(2)}s</p>
-        <p>Tiempo de Ciclo: ${cycleTime.toFixed(2)}s</p>
-        <p>Número Mínimo de Estaciones (M): <strong>${minStations}</strong></p>
-    `;
-    resultDiv.classList.remove('animated');
-    void resultDiv.offsetWidth; // Trigger reflow
-    resultDiv.classList.add('animated');
-}
+// ============================================================================
+// DIAGRAM AND VISUALIZATION FUNCTIONS
+// ============================================================================
 
 /**
  * Dibuja el diagrama de precedencias utilizando Chart.js.
@@ -381,7 +426,7 @@ function getNodePositions() {
  * @param {Chart} chart - La instancia del gráfico de Chart.js.
  * @param {Array} nodes - La lista de nodos (tareas).
  */
- function drawArrows(ctx, chart, nodes) {
+function drawArrows(ctx, chart, nodes) {
     ctx.save();
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
     ctx.lineWidth = 2;
@@ -440,6 +485,10 @@ function drawArrow(ctx, fromX, fromY, toX, toY, radius) {
     ctx.fill();
 }
 
+// ============================================================================
+// LINE BALANCING FUNCTIONS
+// ============================================================================
+
 /**
  * Realiza el balanceo de la línea utilizando el algoritmo de Peso Posicional.
  */
@@ -482,28 +531,6 @@ function balanceLine() {
 }
 
 /**
- * Calcula el Peso Posicional de una tarea.
- * @param {string} taskId - El ID de la tarea.
- * @returns {number} - El Peso Posicional.
- */
-function calculatePositionalWeight(taskId) {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return 0;
-
-    let weight = task.standardTime;
-    const successors = getSuccessors(taskId);
-
-    successors.forEach(successorId => {
-        const successorTask = tasks.find(t => t.id === successorId);
-        if (successorTask) {
-            weight += successorTask.standardTime;
-        }
-    });
-
-    return weight;
-}
-
-/**
  * Obtiene todos los sucesores de una tarea.
  * @param {string} taskId - El ID de la tarea.
  * @returns {Set<string>} - Un conjunto de IDs de tareas sucesoras.
@@ -512,7 +539,7 @@ function getSuccessors(taskId) {
     let successors = new Set();
     let queue = [taskId];
 
-    while(queue.length > 0) {
+    while (queue.length > 0) {
         const currentTaskId = queue.shift();
         tasks.forEach(task => {
             const predecessors = task.predecessor.split(',').map(p => p.trim());
@@ -576,6 +603,10 @@ function assignTasksToStations(sortedTasks) {
 
     return { stations, totalIdleTime, totalWorkContent };
 }
+
+// ============================================================================
+// REPORTING AND OUTPUT FUNCTIONS
+// ============================================================================
 
 /**
  * Muestra los resultados del balanceo en la interfaz.
@@ -713,6 +744,10 @@ function generateReport() {
     reportWindow.document.write('</body></html>');
     reportWindow.document.close();
 }
+
+// ============================================================================
+// DATA MANAGEMENT FUNCTIONS
+// ============================================================================
 
 /**
  * Limpia todos los datos de entrada y los resultados para iniciar una nueva simulación.
